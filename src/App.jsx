@@ -119,14 +119,14 @@ export default function AOVTool() {
   const result = generate();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "white", padding: "16px" }}>
-      <div style={{ maxWidth: "640px", margin: "0 auto", display:"grid", gap:"20px" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "white", padding: "16px", fontFamily:"Arial, sans-serif", lineHeight:"1.5" }}>
+      <div style={{ maxWidth: "640px", margin: "0 auto", display:"grid", gap:"20px", width:"100%" }}>
 
         <div style={{ display:"grid", gap:"10px", textAlign:"center" }}>
-          <h1 style={{ textAlign: "center", color: "#facc15" }}>AOV Booster</h1>
-          <p style={{ fontSize:"13px", color:"#aaa" }}>Naikkan omzet per transaksi tanpa nambah traffic</p>
+          <h1 style={{ textAlign: "center", color: "#facc15", margin:"10px 0" }}>AOV Booster</h1>
+          <p style={{ fontSize:"13px", color:"#aaa", marginBottom:"10px" }}>Naikkan omzet per transaksi tanpa nambah traffic</p>
 
-          <div style={{ background:"#111", padding:"10px", borderRadius:"6px", textAlign:"left" }}>
+          <div style={{ background:"#111", padding:"12px", borderRadius:"8px", textAlign:"left", border:"1px solid #222" }}>
             <p style={{ fontSize:"12px", color:"#ccc" }}><b>Cara Pakai:</b></p>
             <ol style={{ fontSize:"12px", color:"#aaa", paddingLeft:"18px", listStyleType:"decimal" }}>
               <li>Isi nama bisnis & pilih jenis (produk / jasa)</li>
@@ -138,7 +138,7 @@ export default function AOVTool() {
           </div>
           </div>
 
-        <div style={{ background:"#111", padding:"12px", borderRadius:"8px" }}>
+        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
           <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Info Bisnis</b></p>
           <input style={inputStyle} placeholder="Nama bisnis" value={business.name} onChange={e=>setBusiness({...business,name:e.target.value})}/>
         <select style={inputStyle} value={business.type} onChange={e=>setBusiness({...business,type:e.target.value})}>
@@ -148,7 +148,7 @@ export default function AOVTool() {
         </select>
         </div>
 
-        <div style={{ background:"#111", padding:"12px", borderRadius:"8px" }}>
+        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
           <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Data AOV (Omzet & Jumlah Transaksi)</b></p>
           <p style={{ fontSize: "12px", color: "#aaa" }}>
           Gunakan data <b>bulanan</b> untuk konsistensi dan lebih stabil (disarankan untuk UMKM).
@@ -159,7 +159,7 @@ export default function AOVTool() {
           <p style={{ fontSize:"14px", marginTop:"4px" }}><b>AOV:</b> Rp {formatRupiah(calculateAOV())}</p>
         </div>
 
-        <div style={{ background:"#111", padding:"12px", borderRadius:"8px" }}>
+        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
           <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Produk / Jasa</b></p>
         {products.map((p,i)=>(
 
@@ -171,9 +171,9 @@ export default function AOVTool() {
         ))}
         </div>
 
-        <button style={{...buttonStyle, marginTop:"8px"}} onClick={addProduct}>+ Tambah Produk</button>
+        <button style={{...buttonStyle, marginTop:"8px", boxShadow:"0 2px 6px rgba(0,0,0,0.3)"}} onClick={addProduct}>+ Tambah Produk</button>
 
-        <div style={{ background:"#111", padding:"12px", borderRadius:"8px" }}>
+        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
           <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Target</b></p>
           <input style={inputStyle} placeholder="Target AOV" value={target} onChange={e=>setTarget(formatInput(e.target.value))}/>
         </div>
