@@ -120,6 +120,7 @@ export default function AOVTool() {
               <li>Lihat hasil: rekomendasi, analisa, dan aksi yang bisa dilakukan</li>
             </ul>
           </div>
+          </div>
           
 
         <input style={inputStyle} placeholder="Nama bisnis" value={business.name} onChange={e=>setBusiness({...business,name:e.target.value})}/>
