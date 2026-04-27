@@ -107,7 +107,7 @@ export default function AOVTool() {
       <div style={{ maxWidth: "700px", margin: "0 auto", display:"grid", gap:"15px" }}>
 
         <div style={{ display:"grid", gap:"5px" }}>
-          <h1 style={{ textAlign: "left", color: "#facc15" }}>AOV Booster</h1>
+          <h1 style={{ textAlign: "Center", color: "#facc15" }}>AOV Booster</h1>
           <p style={{ fontSize:"13px", color:"#aaa" }}>Naikkan omzet per transaksi tanpa nambah traffic</p>
         </div>
 
