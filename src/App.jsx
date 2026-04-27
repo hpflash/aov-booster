@@ -120,9 +120,7 @@ export default function AOVTool() {
               <li>Lihat hasil: rekomendasi, analisa, dan aksi yang bisa dilakukan</li>
             </ul>
           </div>
-          <h1 style={{ textAlign: "center", color: "#facc15" }}>AOV Booster</h1>
-          <p style={{ fontSize:"13px", color:"#aaa" }}>Naikkan omzet per transaksi tanpa nambah traffic</p>
-        </div>
+          
 
         <input style={inputStyle} placeholder="Nama bisnis" value={business.name} onChange={e=>setBusiness({...business,name:e.target.value})}/>
         <select style={inputStyle} value={business.type} onChange={e=>setBusiness({...business,type:e.target.value})}>
