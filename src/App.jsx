@@ -362,7 +362,8 @@ const inputStyle = {
   background: "#0f0f0f",
   border: "1px solid #333",
   borderRadius: "8px",
-  color: "white"
+  color: "white",
+  boxSizing: "border-box"
 };
 
 const buttonStyle = {
@@ -386,7 +387,9 @@ const productCard = {
   padding: "12px",
   borderRadius: "10px",
   border: "1px solid #1f1f1f",
-  marginBottom: "12px"
+  marginBottom: "12px",
+  width: "100%",
+  boxSizing: "border-box"
 };
 
 const deleteBtn = {
