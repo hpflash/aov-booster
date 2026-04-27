@@ -24,8 +24,31 @@ export default function AOVTool() {
   const [products, setProducts] = useState([{ name: "", price: "", profit: "" }]);
   const [target, setTarget] = useState("");
   const [aovCalc, setAovCalc] = useState({ revenue: "", orders: "" });
+  const [savedScenarios, setSavedScenarios] = useState([]);
 
   const addProduct = () => setProducts([...products, { name: "", price: "", profit: "" }]);
+
+  const resetAll = () => {
+    setBusiness({ name: "", type: "" });
+    setProducts([{ name: "", price: "", profit: "" }]);
+    setTarget("");
+    setAovCalc({ revenue: "", orders: "" });
+  };
+
+  const saveScenario = () => {
+    const snapshot = {
+      business,
+      products,
+      target,
+      aovCalc,
+      result
+    };
+    setSavedScenarios([snapshot, ...savedScenarios]);
+  };
+
+  const downloadPDF = () => {
+    window.print();
+  };
 
   const updateProduct = (i, key, value) => {
     const newProducts = [...products];
@@ -166,6 +189,14 @@ export default function AOVTool() {
         <div style={{ textAlign:"center" }}>
           <h1 style={titleStyle}>AOV Booster</h1>
           <p style={subtitleStyle}>Naikkan omzet per transaksi tanpa nambah traffic</p>
+          <div style={{display:"flex", gap:"8px", justifyContent:"center", marginTop:"10px"}}>
+            <button onClick={resetAll} style={{fontSize:"12px", background:"transparent", color:"#aaa", border:"1px solid #333", padding:"6px 10px", borderRadius:"6px", cursor:"pointer"}}>
+              Reset
+            </button>
+            <button onClick={downloadPDF} style={{fontSize:"12px", background:"#222", color:"#fff", border:"1px solid #333", padding:"6px 10px", borderRadius:"6px", cursor:"pointer"}}>
+              Download PDF
+            </button>
+          </div>
         </div>
 
         
@@ -264,9 +295,24 @@ export default function AOVTool() {
           <input placeholder="Contoh: 50.000" style={inputStyle} value={target} onChange={e=>setTarget(formatInput(e.target.value))}/>
         </div>
 
+        {savedScenarios.length > 0 && (
+          <div style={cardStyle}>
+            <p style={sectionTitle}>Riwayat Skenario</p>
+            {savedScenarios.map((s,i)=>(
+              <div key={i} style={{marginBottom:"8px", fontSize:"12px", borderBottom:"1px solid #222", paddingBottom:"6px"}}>
+                <p><b>{s.business.name || 'Tanpa Nama'}</b></p>
+                <p>AOV Target: Rp {formatRupiah(parseNumber(s.target))}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {result && (
           <div style={cardStyle}>
             <p style={sectionTitle}>Hasil</p>
+            <button onClick={downloadPDF} style={{marginBottom:"10px", fontSize:"12px", background:"#222", color:"#fff", border:"1px solid #333", padding:"6px 10px", borderRadius:"6px", cursor:"pointer"}}>
+              Download PDF
+            </button>
 
             <div style={subCard}>
               <p><b>Strategi Terbaik</b></p>
