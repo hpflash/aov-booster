@@ -187,8 +187,8 @@ export default function AOVTool() {
     <style>{`@media print {
       body { background: white; color: black; }
       button, select, input, details, summary { display: none !important; }
-      #print-area { display: block; }
-      #app-area { display: none; }
+      #print-area { display: block !important; }
+      #app-area { display: block !important; }
       .print-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 8px; }
     }`}</style>
     <div id="app-area" style={appStyle}>
@@ -302,6 +302,33 @@ export default function AOVTool() {
           <p style={sectionTitle}>Target</p>
           <input placeholder="Contoh: 50.000" style={inputStyle} value={target} onChange={e=>setTarget(formatInput(e.target.value))}/>
         </div>
+
+        {result && (
+          <div id="print-area" style={cardStyle}>
+            <p style={sectionTitle}>Hasil</p>
+
+            <div style={subCard}>
+              <p><b>Strategi Terbaik</b></p>
+              <p>{result.recommended?.type?.toUpperCase()}</p>
+              <p style={{fontSize:"12px", color:"#aaa"}}>{result.recommended?.reason}</p>
+              <p>{result.decision}</p>
+            </div>
+
+            <div style={subCard}>
+              <p><b>Breakdown</b></p>
+              {result.breakdown.map((b,i)=>(
+                <p key={i}>• {b}</p>
+              ))}
+            </div>
+
+            <div style={subCard}>
+              <p><b>Next Action</b></p>
+              {result.nextActions.map((a,i)=>(
+                <p key={i}>✔ {a}</p>
+              ))}
+            </div>
+          </div>
+        )}
 
         {savedScenarios.length > 0 && (
           <div style={cardStyle}>
