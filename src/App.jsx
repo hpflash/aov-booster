@@ -183,7 +183,15 @@ export default function AOVTool() {
   const result = generate();
 
   return (
-    <div style={appStyle}>
+    <>
+    <style>{`@media print {
+      body { background: white; color: black; }
+      button, select, input, details, summary { display: none !important; }
+      #print-area { display: block; }
+      #app-area { display: none; }
+      .print-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 8px; }
+    }`}</style>
+    <div id="app-area" style={appStyle}>
       <div style={containerStyle}>
 
         <div style={{ textAlign:"center" }}>
@@ -307,76 +315,11 @@ export default function AOVTool() {
           </div>
         )}
 
-        {result && (
-          <div style={cardStyle}>
-            <p style={sectionTitle}>Hasil</p>
-            <button onClick={downloadPDF} style={{marginBottom:"10px", fontSize:"12px", background:"#222", color:"#fff", border:"1px solid #333", padding:"6px 10px", borderRadius:"6px", cursor:"pointer"}}>
-              Download PDF
-            </button>
-
-            <div style={subCard}>
-              <p><b>Strategi Terbaik</b></p>
-              <p style={{fontWeight:"bold"}}>{result.recommended?.type?.toUpperCase()}</p>
-              <p style={{fontSize:"12px", color:"#aaa"}}>{result.recommended?.reason}</p>
-              <p style={{marginTop:"6px"}}>{result.decision}</p>
-            </div>
-
-            <div style={subCard}>
-              <p><b>Gap AOV</b></p>
-              <p>Rp {formatRupiah(result.gap)}</p>
-            </div>
-
-            <div style={subCard}>
-              <p><b>Simulasi</b></p>
-              {result.sims.map((s,i)=>(
-                <p key={i} style={{opacity: result.recommended?.type === s.type ? 1 : 0.6}}>
-                  {result.recommended?.type === s.type ? '⭐ ' : '👉 '}
-                  {s.label} → Rp {formatRupiah(Math.round(s.aov))}
-                  <span style={{marginLeft:"6px", fontSize:"11px",
-                    color: s.status==='good' ? '#22c55e' : s.status==='medium' ? '#facc15' : '#f87171'}}>
-                    {s.status==='good' ? ' (Direkomendasikan)' : s.status==='medium' ? ' (Cukup)' : ' (Kurang disarankan)'}
-                  </span>
-                </p>
-              ))}
-            </div>
-
-            {result.bestBundle && (
-              <div style={subCard}>
-                <p><b>Bundle Terbaik</b></p>
-                <p>{result.bestBundle.label}</p>
-                <p>Harga: Rp {formatRupiah(result.bestBundle.price)}</p>
-                <p>Profit: Rp {formatRupiah(result.bestBundle.profit)}</p>
-                <p>Margin: {result.bestBundle.marginPct.toFixed(1)}%</p>
-                <p style={{color: result.bestBundle.health === 'Sehat' ? '#22c55e' : result.bestBundle.health === 'Cukup' ? '#facc15' : '#f87171'}}>
-                  {result.bestBundle.health === 'Sehat' ? '✔ Bundle sehat' : result.bestBundle.health === 'Cukup' ? '⚠ Bundle cukup' : '✖ Bundle tipis'}
-                </p>
-              </div>
-            )}
-
-            {result.breakdown.length > 0 && (
-              <div style={subCard}>
-                <p><b>Breakdown Target</b></p>
-                {result.breakdown.map((b,i)=>(
-                  <p key={i}>• {b}</p>
-                ))}
-              </div>
-            )}
-
-            {result.nextActions.length > 0 && (
-              <div style={subCard}>
-                <p><b>Next Action</b></p>
-                {result.nextActions.map((a,i)=>(
-                  <p key={i}>✔ {a}</p>
-                ))}
-              </div>
-            )}
-
-          </div>
-        )}
-
       </div>
     </div>
+    </>
   );
+
 }
 
 const appStyle = {
