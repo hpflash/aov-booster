@@ -106,8 +106,21 @@ export default function AOVTool() {
     <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "white", padding: "20px" }}>
       <div style={{ maxWidth: "700px", margin: "0 auto", display:"grid", gap:"15px" }}>
 
-        <div style={{ display:"grid", gap:"5px" }}>
-          <h1 style={{ textAlign: "Center", color: "#facc15" }}>AOV Booster</h1>
+        <div style={{ display:"grid", gap:"10px", textAlign:"center" }}>
+          <h1 style={{ textAlign: "center", color: "#facc15" }}>AOV Booster</h1>
+          <p style={{ fontSize:"13px", color:"#aaa" }}>Naikkan omzet per transaksi tanpa nambah traffic</p>
+
+          <div style={{ background:"#111", padding:"10px", borderRadius:"6px", textAlign:"left" }}>
+            <p style={{ fontSize:"12px", color:"#ccc" }}><b>Cara Pakai:</b></p>
+            <ul style={{ fontSize:"12px", color:"#aaa", paddingLeft:"18px" }}>
+              <li>Isi nama bisnis & pilih jenis (produk / jasa)</li>
+              <li>Masukkan revenue & jumlah order (atau isi produk saja)</li>
+              <li>Tambahkan produk/jasa beserta harga & profit</li>
+              <li>Isi target AOV yang ingin dicapai</li>
+              <li>Lihat hasil: rekomendasi, analisa, dan aksi yang bisa dilakukan</li>
+            </ul>
+          </div>
+          <h1 style={{ textAlign: "center", color: "#facc15" }}>AOV Booster</h1>
           <p style={{ fontSize:"13px", color:"#aaa" }}>Naikkan omzet per transaksi tanpa nambah traffic</p>
         </div>
 
