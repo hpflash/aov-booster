@@ -80,9 +80,20 @@ export default function AOVTool() {
     const upsellValue = base * 0.3;
     const upgradeValue = premium - base;
 
-    sims.push({type:"upsell",label:"Upsell",aov:currentAov+upsellValue,delta:upsellValue});
-    sims.push({type:"upgrade",label:"Upgrade",aov:currentAov+upgradeValue,delta:upgradeValue});
-    if(bestBundle) sims.push({type:"bundle",label:"Bundle",aov:bestBundle.price,profit:bestBundle.profit,marginPct:bestBundle.marginPct,health:bestBundle.health});
+    const upsellStatus = upsellValue <= 0 ? "bad" : (upsellValue >= gap ? "good" : "medium");
+    const upgradeStatus = upgradeValue <= 0 ? "bad" : (upgradeValue >= gap ? "good" : "medium");
+
+    sims.push({type:"upsell",label:"Upsell",aov:currentAov+upsellValue,delta:upsellValue,status:upsellStatus});
+    sims.push({type:"upgrade",label:"Upgrade",aov:currentAov+upgradeValue,delta:upgradeValue,status:upgradeStatus});
+
+    if(bestBundle){
+      const bundleIncrease = bestBundle.price - currentAov;
+      let bundleStatus = "bad";
+      if(bundleIncrease > 0){
+        bundleStatus = bestBundle.health === "Sehat" ? "good" : bestBundle.health === "Cukup" ? "medium" : "bad";
+      }
+      sims.push({type:"bundle",label:"Bundle",aov:bestBundle.price,profit:bestBundle.profit,marginPct:bestBundle.marginPct,health:bestBundle.health,status:bundleStatus});
+    }
 
     const bestAOV=sims.reduce((a,b)=>!a||b.aov>a.aov?b:a,null);
     const bestProfit=sims.reduce((a,b)=>!a||(b.profit||0)>(a.profit||0)?b:a,null);
@@ -104,15 +115,20 @@ export default function AOVTool() {
       breakdown.push(`Target AOV: Rp ${formatRupiah(targetAov)} (sekarang Rp ${formatRupiah(currentAov)})`);
 
       if (upsellValue > 0) {
-        breakdown.push(`Upsell menambah ± Rp ${formatRupiah(Math.round(upsellValue))} per transaksi → butuh sekitar ${upsellCount} transaksi upsell`);
+        breakdown.push(`🟡 Upsell: tawarkan produk tambahan di setiap transaksi. Rata-rata menambah Rp ${formatRupiah(Math.round(upsellValue))}. Untuk mengejar target, butuh sekitar ${upsellCount} transaksi yang berhasil upsell.`);
       }
 
       if (upgradeValue > 0) {
-        breakdown.push(`Upgrade menambah ± Rp ${formatRupiah(Math.round(upgradeValue))} per transaksi → butuh sekitar ${upgradeCount} upgrade`);
+        breakdown.push(`🔵 Upgrade: arahkan pembeli ke versi yang lebih mahal. Rata-rata menambah Rp ${formatRupiah(Math.round(upgradeValue))}. Untuk mengejar target, butuh sekitar ${upgradeCount} transaksi upgrade.`);
       }
 
       if (bestBundle) {
-        breakdown.push(`Bundle bisa langsung dorong AOV ke Rp ${formatRupiah(bestBundle.price)} dalam 1 transaksi`);
+        const bundleIncrease = bestBundle.price - currentAov;
+        if (bundleIncrease > 0) {
+          breakdown.push(`🟣 Bundle: gabungkan beberapa produk jadi satu paket. Rata-rata menambah Rp ${formatRupiah(Math.round(bundleIncrease))} per transaksi, sehingga AOV mendekati Rp ${formatRupiah(bestBundle.price)}.`);
+        } else {
+          breakdown.push(`🟣 Bundle: saat ini kurang efektif karena justru menurunkan nilai transaksi. Perlu revisi harga atau komposisi bundle.`);
+        }
       }
     }
 
@@ -268,7 +284,12 @@ export default function AOVTool() {
               <p><b>Simulasi</b></p>
               {result.sims.map((s,i)=>(
                 <p key={i} style={{opacity: result.recommended?.type === s.type ? 1 : 0.6}}>
-                  {result.recommended?.type === s.type ? '⭐ ' : '👉 '}{s.label} → Rp {formatRupiah(Math.round(s.aov))}
+                  {result.recommended?.type === s.type ? '⭐ ' : '👉 '}
+                  {s.label} → Rp {formatRupiah(Math.round(s.aov))}
+                  <span style={{marginLeft:"6px", fontSize:"11px",
+                    color: s.status==='good' ? '#22c55e' : s.status==='medium' ? '#facc15' : '#f87171'}}>
+                    {s.status==='good' ? ' (Direkomendasikan)' : s.status==='medium' ? ' (Cukup)' : ' (Kurang disarankan)'}
+                  </span>
                 </p>
               ))}
             </div>
