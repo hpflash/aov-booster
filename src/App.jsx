@@ -47,7 +47,56 @@ export default function AOVTool() {
   };
 
   const downloadPDF = () => {
-    window.print();
+    if (!result) return;
+
+    const html = `
+      <html>
+      <head>
+        <title>AOV Report</title>
+        <style>
+          body { font-family: Arial; padding:20px; }
+          h1 { margin-bottom:4px; }
+          .section { margin-top:16px; }
+          .card { border:1px solid #ddd; padding:12px; border-radius:8px; margin-top:8px; }
+          .small { font-size:12px; color:#555; }
+        </style>
+      </head>
+      <body>
+        <h1>AOV Strategy Report</h1>
+        <div class="small">${business.name || "Bisnis"}</div>
+        <div class="small">${new Date().toLocaleDateString('id-ID')}</div>
+
+        <div class="section">
+          <div class="card">
+            <b>Strategi Terbaik</b><br/>
+            ${result.recommended?.type?.toUpperCase()}<br/>
+            <span class="small">${result.recommended?.reason}</span><br/>
+            ${result.decision}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="card">
+            <b>Breakdown</b>
+            ${result.breakdown.map(b=>`<p>• ${b}</p>`).join("")}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="card">
+            <b>Next Action</b>
+            ${result.nextActions.map(a=>`<p>✔ ${a}</p>`).join("")}
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
   };
 
   const updateProduct = (i, key, value) => {
@@ -186,10 +235,7 @@ export default function AOVTool() {
     <>
     <style>{`@media print {
       body { background: white; color: black; }
-      button, select, input, details, summary { display: none !important; }
-      #print-area { display: block !important; }
-      #app-area { display: block !important; }
-      .print-card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; border-radius: 8px; }
+      button { display: none !important; }
     }`}</style>
     <div id="app-area" style={appStyle}>
       <div style={containerStyle}>
