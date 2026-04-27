@@ -7,9 +7,9 @@ function formatInput(val){
 function parseNumber(val){
   return Number((val || "").toString().replace(/\./g, ""));
 }
+
 function formatRupiah(n){
-  const num = Number(n)||0;
-  return num.toLocaleString('id-ID');
+  return (Number(n)||0).toLocaleString('id-ID');
 }
 
 function calculateMargin(p) {
@@ -20,7 +20,7 @@ function calculateMargin(p) {
 }
 
 export default function AOVTool() {
-  const [business, setBusiness] = useState({ name: "", type: "" });
+    const [business, setBusiness] = useState({ name: "", type: "" });
   const [products, setProducts] = useState([{ name: "", price: "", profit: "" }]);
   const [target, setTarget] = useState("");
   const [aovCalc, setAovCalc] = useState({ revenue: "", orders: "" });
@@ -65,9 +65,13 @@ export default function AOVTool() {
         const p1=valid[i];
         const p2=valid[j];
         const price=Math.round((parseNumber(p1.price)+parseNumber(p2.price))*0.9);
-        const profit=parseNumber(p1.profit)+parseNumber(p2.profit);
+        const totalCost = (parseNumber(p1.price) - parseNumber(p1.profit)) + (parseNumber(p2.price) - parseNumber(p2.profit));
+        const profit = price - totalCost;
         if(!bestBundle||profit>bestBundle.profit){
-          bestBundle={label:`${p1.name} + ${p2.name}`,price,profit};
+          const revenue = price;
+        const marginPct = revenue ? (profit / revenue) * 100 : 0;
+        const health = marginPct >= 30 ? "Sehat" : marginPct >= 15 ? "Cukup" : "Tipis";
+        bestBundle={label:`${p1.name} + ${p2.name}`,price,profit,marginPct,health};
         }
       }
     }
@@ -76,17 +80,40 @@ export default function AOVTool() {
     const upsellValue = base * 0.3;
     const upgradeValue = premium - base;
 
-    sims.push({label:"Upsell",aov:currentAov+upsellValue});
-    sims.push({label:"Upgrade",aov:currentAov+upgradeValue});
-    if(bestBundle) sims.push({label:"Bundle",aov:bestBundle.price,profit:bestBundle.profit});
+    sims.push({type:"upsell",label:"Upsell",aov:currentAov+upsellValue,delta:upsellValue});
+    sims.push({type:"upgrade",label:"Upgrade",aov:currentAov+upgradeValue,delta:upgradeValue});
+    if(bestBundle) sims.push({type:"bundle",label:"Bundle",aov:bestBundle.price,profit:bestBundle.profit,marginPct:bestBundle.marginPct,health:bestBundle.health});
 
     const bestAOV=sims.reduce((a,b)=>!a||b.aov>a.aov?b:a,null);
     const bestProfit=sims.reduce((a,b)=>!a||(b.profit||0)>(a.profit||0)?b:a,null);
 
+    let recommended = null;
+    if (bestBundle && bestBundle.health !== "Tipis") {
+      recommended = { type: "bundle", reason: "Profit tinggi & margin sehat" };
+    } else if (upgradeValue >= upsellValue) {
+      recommended = { type: "upgrade", reason: "Kenaikan per transaksi lebih besar" };
+    } else {
+      recommended = { type: "upsell", reason: "Paling mudah dieksekusi cepat" };
+    }
+
     const breakdown = [];
     if (gap > 0) {
-      if (upsellValue > 0) breakdown.push(`Butuh ± ${Math.ceil(gap / upsellValue)} upsell (@Rp ${formatRupiah(Math.round(upsellValue))})`);
-      if (upgradeValue > 0) breakdown.push(`Atau ${Math.ceil(gap / upgradeValue)} upgrade ke premium`);
+      const upsellCount = upsellValue > 0 ? Math.ceil(gap / upsellValue) : 0;
+      const upgradeCount = upgradeValue > 0 ? Math.ceil(gap / upgradeValue) : 0;
+
+      breakdown.push(`Target AOV: Rp ${formatRupiah(targetAov)} (sekarang Rp ${formatRupiah(currentAov)})`);
+
+      if (upsellValue > 0) {
+        breakdown.push(`Upsell menambah ± Rp ${formatRupiah(Math.round(upsellValue))} per transaksi → butuh sekitar ${upsellCount} transaksi upsell`);
+      }
+
+      if (upgradeValue > 0) {
+        breakdown.push(`Upgrade menambah ± Rp ${formatRupiah(Math.round(upgradeValue))} per transaksi → butuh sekitar ${upgradeCount} upgrade`);
+      }
+
+      if (bestBundle) {
+        breakdown.push(`Bundle bisa langsung dorong AOV ke Rp ${formatRupiah(bestBundle.price)} dalam 1 transaksi`);
+      }
     }
 
     const nextActions = [];
@@ -95,143 +122,187 @@ export default function AOVTool() {
     const upsellProduct = otherProducts[0];
 
     if (business.type === "jasa") {
-      nextActions.push(`Buat paket premium dari ${main.name} dengan harga lebih tinggi`);
-      if (upsellProduct) nextActions.push(`Tambahkan ${upsellProduct.name} sebagai add-on di setiap transaksi`);
-      nextActions.push(`Buat versi express dari ${main.name} dengan harga lebih mahal`);
+      nextActions.push(`Buat paket premium dari ${main.name}`);
+      if (upsellProduct) nextActions.push(`Tambahkan ${upsellProduct.name} sebagai add-on`);
     } else {
       if (upsellProduct) nextActions.push(`Upsell ${upsellProduct.name} saat beli ${main.name}`);
-      if (bestBundle) nextActions.push(`Bundle ${bestBundle.label} untuk naikkan AOV`);
-      nextActions.push(`Buat versi premium dari ${main.name}`);
+      if (bestBundle) nextActions.push(`Bundle ${bestBundle.label}`);
     }
 
     let decision = "";
-    if (bestProfit && bestAOV && bestProfit === bestAOV) {
-      decision = `Gunakan ${bestAOV.label} — terbaik untuk AOV & profit`;
-    } else if (bestProfit) {
-      decision = `Prioritaskan ${bestProfit.label} — profit paling tinggi`;
-    } else if (bestAOV) {
-      decision = `Gunakan ${bestAOV.label} — paling menaikkan AOV`;
+    if (recommended?.type === "bundle") {
+      decision = `Gunakan Bundle — kombinasi profit tinggi dan margin sehat`;
+    } else if (recommended?.type === "upgrade") {
+      decision = `Gunakan Upgrade — kenaikan nilai per transaksi paling besar`;
+    } else if (recommended?.type === "upsell") {
+      decision = `Gunakan Upsell — paling mudah dieksekusi dan cepat jalan`;
     }
 
-    return { main, sims, bestAOV, bestProfit, bestBundle, gap, breakdown, nextActions, decision };
+    return { main, sims, bestAOV, bestProfit, bestBundle, gap, breakdown, nextActions, decision, recommended };
   };
 
   const result = generate();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "white", padding: "16px", fontFamily:"Arial, sans-serif", lineHeight:"1.5" }}>
-      <div style={{ maxWidth: "640px", margin: "0 auto", display:"grid", gap:"20px", width:"100%" }}>
+    <div style={appStyle}>
+      <div style={containerStyle}>
 
-        <div style={{ display:"grid", gap:"10px", textAlign:"center" }}>
-          <h1 style={{ textAlign: "center", color: "#facc15", margin:"10px 0" }}>AOV Booster</h1>
-          <p style={{ fontSize:"13px", color:"#aaa", marginBottom:"10px" }}>Naikkan omzet per transaksi tanpa nambah traffic</p>
-
-          <div style={{ background:"#111", padding:"12px", borderRadius:"8px", textAlign:"left", border:"1px solid #222" }}>
-            <p style={{ fontSize:"12px", color:"#ccc" }}><b>Cara Pakai:</b></p>
-            <ol style={{ fontSize:"12px", color:"#aaa", paddingLeft:"18px", listStyleType:"decimal" }}>
-              <li>Isi nama bisnis & pilih jenis (produk / jasa)</li>
-              <li>Masukkan omzet & jumlah transaksi (boleh skip kalau pakai data produk saja)</li>
-              <li>Tambahkan produk/jasa beserta harga & profit</li>
-              <li>Isi target AOV yang ingin dicapai</li>
-              <li>Lihat hasil: rekomendasi, analisa, dan aksi yang bisa dilakukan</li>
-            </ol>
-          </div>
-          </div>
-
-        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
-          <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Info Bisnis</b></p>
-          <input style={inputStyle} placeholder="Nama bisnis" value={business.name} onChange={e=>setBusiness({...business,name:e.target.value})}/>
-        <select style={inputStyle} value={business.type} onChange={e=>setBusiness({...business,type:e.target.value})}>
-          <option value="">Pilih jenis</option>
-          <option value="produk">Produk</option>
-          <option value="jasa">Jasa</option>
-        </select>
+        <div style={{ textAlign:"center" }}>
+          <h1 style={titleStyle}>AOV Booster</h1>
+          <p style={subtitleStyle}>Naikkan omzet per transaksi tanpa nambah traffic</p>
         </div>
 
-        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
-          <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Data AOV (Omzet & Jumlah Transaksi)</b></p>
-          <p style={{ fontSize: "12px", color: "#aaa" }}>
-          Gunakan data <b>bulanan</b> untuk konsistensi dan lebih stabil (disarankan untuk UMKM).
-        </p>
+        
+        <div style={cardStyle}>
+          <p style={sectionTitle}>Progress</p>
+          <p style={{fontSize:"12px", color:"#888", marginBottom:"10px"}}>
+            Isi dari kiri ke kanan: mulai dari info bisnis sampai target, lalu lihat hasil di bawah
+          </p>
 
-        <input style={inputStyle} placeholder="Omzet (per bulan)" value={aovCalc.revenue} onChange={e=>setAovCalc({...aovCalc,revenue:formatInput(e.target.value)})}/>
-          <input style={inputStyle} placeholder="Jumlah Transaksi (per bulan)" value={aovCalc.orders} onChange={e=>setAovCalc({...aovCalc,orders:formatInput(e.target.value)})}/>
-          <p style={{ fontSize:"14px", marginTop:"4px" }}><b>AOV:</b> Rp {formatRupiah(calculateAOV())}</p>
-        </div>
-
-        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
-          <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Produk / Jasa</b></p>
-        {products.map((p,i)=>(
-
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", marginBottom:"10px" }}>
-            <input style={inputStyle} placeholder="Nama" value={p.name} onChange={e=>updateProduct(i,'name',e.target.value)}/>
-            <input style={inputStyle} placeholder="Harga" value={p.price} onChange={e=>updateProduct(i,'price',e.target.value)}/>
-            <input style={inputStyle} placeholder="Profit" value={p.profit} onChange={e=>updateProduct(i,'profit',e.target.value)}/>
+          <div style={progressContainer}>
+            {[
+              {label:"Info", done: business.name && business.type},
+              {label:"Omzet", done: aovCalc.revenue && aovCalc.orders},
+              {label:"Produk", done: products.some(p=>p.name && p.price && p.profit)},
+              {label:"Target", done: target},
+              {label:"Hasil", done: result}
+            ].map((step,i)=>(
+              <div key={i} style={{flex:1, textAlign:"center"}}>
+                <div style={{
+                  width:"28px",
+                  height:"28px",
+                  borderRadius:"50%",
+                  margin:"0 auto",
+                  background: step.done ? "#22c55e" : "#333",
+                  display:"flex",
+                  alignItems:"center",
+                  justifyContent:"center",
+                  fontSize:"12px"
+                }}>
+                  {i+1}
+                </div>
+                <p style={{fontSize:"11px", color:"#aaa", marginTop:"4px"}}>{step.label}</p>
+              </div>
+            ))}
           </div>
-        ))}
         </div>
 
-        <button style={{...buttonStyle, marginTop:"8px", boxShadow:"0 2px 6px rgba(0,0,0,0.3)"}} onClick={addProduct}>+ Tambah Produk</button>
+        <div style={cardStyle}>
+          <p style={sectionTitle}>Info Bisnis</p>
+          <label style={label}>Nama Bisnis</label>
+          <input placeholder="Contoh: Kedai Kopi Senja" style={inputStyle} value={business.name} onChange={e=>setBusiness({...business,name:e.target.value})}/>
 
-        <div style={{ background:"#111", padding:"14px", borderRadius:"10px", border:"1px solid #222" }}>
-          <p style={{ color:"#ccc", marginBottom:"10px" }}><b>Target</b></p>
-          <input style={inputStyle} placeholder="Target AOV" value={target} onChange={e=>setTarget(formatInput(e.target.value))}/>
+          <label style={label}>Jenis</label>
+          <select style={inputStyle} value={business.type} onChange={e=>setBusiness({...business,type:e.target.value})}>
+            <option value="">Pilih</option>
+            <option value="produk">Produk</option>
+            <option value="jasa">Jasa</option>
+          </select>
+        </div>
+
+        <div style={cardStyle}>
+          <p style={sectionTitle}>Data AOV</p>
+          <label style={label}>Omzet (per bulan)</label>
+          <input placeholder="Contoh: 10.000.000" style={inputStyle} value={aovCalc.revenue} onChange={e=>setAovCalc({...aovCalc,revenue:formatInput(e.target.value)})}/>
+
+          <label style={label}>Jumlah Transaksi</label>
+          <input placeholder="Contoh: 200" style={inputStyle} value={aovCalc.orders} onChange={e=>setAovCalc({...aovCalc,orders:formatInput(e.target.value)})}/>
+
+          <p style={{ marginTop:"6px" }}><b>AOV:</b> Rp {formatRupiah(calculateAOV())}</p>
+        </div>
+
+        <div style={cardStyle}>
+          <p style={sectionTitle}>Produk / Jasa</p>
+          {products.map((p,i)=>(
+            <details key={i} style={productCard}>
+              <summary style={{cursor:"pointer", fontWeight:"bold", marginBottom:"8px"}}>
+                {p.name || `Item ${i+1}`}
+              </summary>
+
+              <div style={{display:"flex", justifyContent:"space-between", marginBottom:"6px"}}>
+                <span style={{fontSize:"12px", color:"#888"}}>Detail</span>
+                {products.length > 1 && (
+                  <button onClick={(e)=>{
+                    e.preventDefault();
+                    const newProducts = products.filter((_,idx)=>idx!==i);
+                    setProducts(newProducts);
+                  }} style={deleteBtn}>Hapus</button>
+                )}
+              </div>
+
+              <label style={label}>Nama</label>
+              <input placeholder="Contoh: Kopi Latte" style={inputStyle} value={p.name} onChange={e=>updateProduct(i,'name',e.target.value)}/>
+
+              <label style={label}>Harga</label>
+              <input placeholder="Contoh: 25.000" style={inputStyle} value={p.price} onChange={e=>updateProduct(i,'price',e.target.value)}/>
+
+              <label style={label}>Profit</label>
+              <input placeholder="Contoh: 10.000" style={inputStyle} value={p.profit} onChange={e=>updateProduct(i,'profit',e.target.value)}/>
+            </details>
+          ))}
+          <button style={buttonStyle} onClick={addProduct}>+ Tambah Produk</button>
+        </div>
+
+        <div style={cardStyle}>
+          <p style={sectionTitle}>Target</p>
+          <input placeholder="Contoh: 50.000" style={inputStyle} value={target} onChange={e=>setTarget(formatInput(e.target.value))}/>
         </div>
 
         {result && (
-          <div style={{ border:"1px solid #333", padding:"15px", borderRadius:"8px", display:"grid", gap:"10px", textAlign:"left" }}>
+          <div style={cardStyle}>
+            <p style={sectionTitle}>Hasil</p>
 
-            <div style={{ background:"#1f2937", padding:"12px", borderRadius:"6px" }}>
-              <p style={{ fontSize:"12px", color:"#aaa" }}>Potensi peningkatan omzet:</p>
-              <p style={{ fontSize:"18px", fontWeight:"bold" }}>+Rp {formatRupiah(Math.max(...result.sims.map(s=>Math.round(s.aov))) - calculateAOV())}</p>
+            <div style={subCard}>
+              <p><b>Strategi Terbaik</b></p>
+              <p style={{fontWeight:"bold"}}>{result.recommended?.type?.toUpperCase()}</p>
+              <p style={{fontSize:"12px", color:"#aaa"}}>{result.recommended?.reason}</p>
+              <p style={{marginTop:"6px"}}>{result.decision}</p>
             </div>
 
-            <div style={{ background:"#2a2a00", padding:"10px", borderRadius:"6px" }}>
-              <p><b>Rekomendasi Utama:</b></p>
-              <p>{result.decision}</p>
+            <div style={subCard}>
+              <p><b>Gap AOV</b></p>
+              <p>Rp {formatRupiah(result.gap)}</p>
             </div>
 
-            <p><b>Main Produk:</b> {result.main.name}</p>
-            <div style={{ background: result.gap > 0 ? "#3f1d1d" : "#1d3f2a", padding:"10px", borderRadius:"6px" }}>
-              <p><b>Gap AOV:</b> Rp {formatRupiah(result.gap)}</p>
-              <p style={{ fontSize:"12px", color:"#ccc" }}>
-                {result.gap > 0 ? "Target belum tercapai — perlu strategi tambahan" : "Target tercapai atau terlampaui"}
-              </p>
-            </div>
-
-            {result.breakdown.length > 0 && (
-              <div>
-                <p><b>Analisa:</b></p>
-                <ul style={{ paddingLeft:"20px", textAlign:"left" }}>
-                  {result.breakdown.map((b,i)=>(<li key={i}>{b}</li>))}
-                </ul>
-              </div>
-            )}
-
-            <div style={{ background:"#1a1a1a", padding:"10px", borderRadius:"6px" }}>
-              <p><b>Next Action (Langsung Eksekusi):</b></p>
-              <ul style={{ paddingLeft:"20px", textAlign:"left" }}>
-                {result.nextActions.map((a,i)=>(<li key={i}>{a}</li>))}
-              </ul>
+            <div style={subCard}>
+              <p><b>Simulasi</b></p>
+              {result.sims.map((s,i)=>(
+                <p key={i} style={{opacity: result.recommended?.type === s.type ? 1 : 0.6}}>
+                  {result.recommended?.type === s.type ? '⭐ ' : '👉 '}{s.label} → Rp {formatRupiah(Math.round(s.aov))}
+                </p>
+              ))}
             </div>
 
             {result.bestBundle && (
-              <p><b>Bundle Terbaik:</b> {result.bestBundle.label} → Rp {formatRupiah(result.bestBundle.price)} (Profit Rp {formatRupiah(result.bestBundle.profit)})</p>
+              <div style={subCard}>
+                <p><b>Bundle Terbaik</b></p>
+                <p>{result.bestBundle.label}</p>
+                <p>Harga: Rp {formatRupiah(result.bestBundle.price)}</p>
+                <p>Profit: Rp {formatRupiah(result.bestBundle.profit)}</p>
+                <p>Margin: {result.bestBundle.marginPct.toFixed(1)}%</p>
+                <p style={{color: result.bestBundle.health === 'Sehat' ? '#22c55e' : result.bestBundle.health === 'Cukup' ? '#facc15' : '#f87171'}}>
+                  {result.bestBundle.health === 'Sehat' ? '✔ Bundle sehat' : result.bestBundle.health === 'Cukup' ? '⚠ Bundle cukup' : '✖ Bundle tipis'}
+                </p>
+              </div>
             )}
 
-            <div style={{ background:"#1a1a1a", padding:"10px", borderRadius:"6px" }}>
-              <p><b>Simulasi Dampak (AOV, bukan profit bersih):</b></p>
-              <ul style={{ paddingLeft:"20px", textAlign:"left" }}>
-                {result.sims.map((s,i)=>(
-                  <li key={i}>
-                    {s.label} → Rp {formatRupiah(Math.round(s.aov))}
-                    {s.profit?` (Profit Rp ${formatRupiah(s.profit)})`:""}
-                    {result.bestAOV===s?" 🔥 BEST AOV":""}
-                    {result.bestProfit===s?" 💰 BEST PROFIT":""}
-                  </li>
+            {result.breakdown.length > 0 && (
+              <div style={subCard}>
+                <p><b>Breakdown Target</b></p>
+                {result.breakdown.map((b,i)=>(
+                  <p key={i}>• {b}</p>
                 ))}
-              </ul>
-            </div>
+              </div>
+            )}
+
+            {result.nextActions.length > 0 && (
+              <div style={subCard}>
+                <p><b>Next Action</b></p>
+                {result.nextActions.map((a,i)=>(
+                  <p key={i}>✔ {a}</p>
+                ))}
+              </div>
+            )}
 
           </div>
         )}
@@ -241,25 +312,101 @@ export default function AOVTool() {
   );
 }
 
-const inputStyle = {
-  background: "#111",
-  border: "1px solid #333",
-  padding: "12px",
-  borderRadius: "8px",
+const appStyle = {
+  minHeight: "100vh",
+  background: "#0a0a0a",
   color: "white",
+  padding: "16px",
+  fontFamily: "Inter, Arial"
+};
+
+const containerStyle = {
+  maxWidth: "480px",
+  margin: "0 auto",
+  display: "grid",
+  gap: "16px"
+};
+
+const cardStyle = {
+  background: "#111",
+  padding: "16px",
+  borderRadius: "12px",
+  border: "1px solid #222"
+};
+
+const titleStyle = {
+  color: "#facc15"
+};
+
+const subtitleStyle = {
+  fontSize: "13px",
+  color: "#aaa"
+};
+
+const sectionTitle = {
+  marginBottom: "10px",
+  fontWeight: "bold"
+};
+
+const label = {
+  fontSize: "12px",
+  color: "#aaa",
+  marginBottom: "4px",
+  display: "block"
+};
+
+const inputStyle = {
   width: "100%",
-  marginBottom: "8px",
-  fontSize: "14px"
+  padding: "12px",
+  marginBottom: "10px",
+  background: "#0f0f0f",
+  border: "1px solid #333",
+  borderRadius: "8px",
+  color: "white"
 };
 
 const buttonStyle = {
+  width: "100%",
+  padding: "12px",
   background: "#facc15",
-  color: "black",
+  border: "none",
+  borderRadius: "8px",
+  fontWeight: "bold"
+};
+
+const listStyle = {
+  paddingLeft: "18px",
+  fontSize: "13px",
+  color: "#aaa",
+  listStyleType: "decimal"
+};
+
+const productCard = {
+  background: "#0d0d0d",
+  padding: "12px",
+  borderRadius: "10px",
+  border: "1px solid #1f1f1f",
+  marginBottom: "12px"
+};
+
+const deleteBtn = {
+  background:"transparent",
+  color:"#f87171",
+  border:"none",
+  cursor:"pointer",
+  fontSize:"12px"
+};
+
+const progressContainer = {
+  display:"flex",
+  justifyContent:"space-between",
+  gap:"6px"
+};
+
+const subCard = {
+  background: "#0f0f0f",
   padding: "12px",
   borderRadius: "8px",
-  border: "none",
-  cursor: "pointer",
-  width: "100%",
-  fontWeight: "bold",
-  fontSize: "14px"
+  border: "1px solid #222",
+  marginTop: "10px"
 };
