@@ -206,7 +206,8 @@ export default function AOVTool() {
               `).join('')}
             </div>
           </div>
-              </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -414,7 +415,9 @@ Strategi kombinasi: ${combos.join(", ")}`;
         ? (upgradeValue)
         : (upsellValue);
 
-    const impact = Math.max(0, Math.round(impactValue || 0));
+    // fallback kalau impact 0 (biar tidak kosong / useless)
+    const fallbackImpact = (bestAOV?.aov || 0) - currentAov;
+    const impact = Math.max(0, Math.round((impactValue || 0) > 0 ? impactValue : fallbackImpact));
 
     const urgency = gap > 0
       ? `Bisa mulai hari ini: targetkan kenaikan ±Rp ${formatRupiah(impact)} per transaksi untuk mengejar gap Rp ${formatRupiah(gap)}.`
