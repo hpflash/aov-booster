@@ -145,13 +145,7 @@ export default function AOVTool() {
             <div style="margin-top:6px;"><b>Impact:</b> +Rp ${formatRupiah(result.impact || 0)} / transaksi</div>
             <div class="muted" style="margin-top:4px;">${result.urgency || ''}</div>
             <div class="divider"></div>
-            <div class="label">INSIGHT</div>
-            <div class="h">Strategi Utama</div>
-            <div class="green">${result.recommended?.reason || ''}</div>
-            <div style="margin-top:8px; line-height:1.6;">
-              ${(result.insight || '').replace(/\n/g,'<br/>')}
-            </div>
-            <div class="divider"></div>
+            
             <div class="label">ACTION PLAN</div>
             <ul>
               ${(result.priority||[]).map(p=>`<li>${p}</li>`).join('')}
@@ -182,6 +176,22 @@ export default function AOVTool() {
                   </tr>`;
                 }).join('')}
             </table>
+
+            
+            <div class="card" style="margin-top:10px;">
+              <div class="label">TOP STRATEGI</div>
+              ${result.ranking?.map((r,i)=>`
+                <div style="padding:8px;margin-bottom:6px;border:1px solid #ddd;border-radius:6px;${i===0 ? 'background:#ecfdf5;font-weight:bold;' : ''}">
+                  <b>#${i+1} ${r.label}</b>
+                  <div style="font-size:12px;color:#666;">
+                    Potensi AOV: Rp ${formatRupiah(Math.round(r.aov || 0))}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -395,7 +405,13 @@ Strategi kombinasi: ${combos.join(", ")}`;
       ? `Bisa mulai hari ini: targetkan kenaikan ±Rp ${formatRupiah(impact)} per transaksi untuk mengejar gap Rp ${formatRupiah(gap)}.`
       : `Target tercapai. Fokus ke scaling (traffic / repeat order).`;
 
-    return { main, sims, bestAOV, bestProfit, bestBundle, gap, breakdown, nextActions, recommended, insight, priority, impact, urgency };
+    // 🔥 RANKING TOP 3 STRATEGI
+    const ranking = sims
+      .map(s => ({ ...s, score: (s.aov || 0) + (s.profit || 0) }))
+      .sort((a,b)=>b.score-a.score)
+      .slice(0,3);
+
+    return { main, sims, bestAOV, bestProfit, bestBundle, gap, breakdown, nextActions, recommended, insight, priority, impact, urgency, ranking };
   };
 
   const result = generate();
@@ -563,30 +579,6 @@ Strategi kombinasi: ${combos.join(", ")}`;
                   {result.urgency}
                 </div>
               </div>
-
-              {/* Header */}
-              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px"}}>
-                <div style={{fontSize:"12px", color:"#888"}}>INSIGHT</div>
-                <div style={{fontSize:"11px", padding:"4px 8px", borderRadius:"999px", background:"#111", border:"1px solid #333"}}>
-                  {result.recommended?.type?.toUpperCase()}
-                </div>
-              </div>
-
-              {/* Main Title */}
-              <div style={{fontSize:"14px", fontWeight:"bold", marginBottom:"6px"}}>
-                Strategi Utama
-              </div>
-              <div style={{fontSize:"13px", color:"#d1fae5", marginBottom:"8px"}}>
-                {result.recommended?.reason}
-              </div>
-
-              {/* Insight Text */}
-              <div style={{fontSize:"13px", lineHeight:"1.6", marginBottom:"10px", whiteSpace:"pre-line"}}>
-                {result.insight}
-              </div>
-
-              {/* Divider */}
-              <div style={{height:"1px", background:"#222", margin:"10px 0"}} />
 
               {/* Action Plan */}
               <div style={{fontSize:"12px", color:"#888", marginBottom:"6px"}}>ACTION PLAN</div>
