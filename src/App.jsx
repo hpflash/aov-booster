@@ -20,6 +20,48 @@ function calculateMargin(p) {
 }
 
 export default function AOVTool() {
+
+  // 🔁 SINGLE SOURCE OF TRUTH (UI + PDF)
+  const buildRows = (business, products, result) => {
+    const isJasa = business.type === 'jasa';
+    const mainName = result?.main?.name || (isJasa ? 'kelas / program' : 'produk utama');
+    const addOn = products?.[1]?.name || (isJasa ? 'rekaman + modul + konsultasi' : 'item kecil');
+
+    const getExample = (key) => {
+      const map = {
+        addon: isJasa
+          ? `Saat closing ${mainName}, tawarkan upgrade bernilai seperti ${addOn}`
+          : `Saat beli ${mainName}, tawarkan ${addOn}`,
+
+        threshold: isJasa
+          ? `Upgrade ke paket lebih tinggi yang include ${addOn}`
+          : `Tambah sedikit untuk dapat ${addOn}`,
+
+        anchoring: isJasa
+          ? `Buat paket basic, standard, premium → arahkan ke standard`
+          : `Buat 3 versi → arahkan ke tengah`,
+
+        scarcity: isJasa
+          ? `Batch terbatas + bonus ${addOn}`
+          : `Promo terbatas: beli ${mainName} dapat ${addOn}`,
+
+        bundle: result?.bestBundle
+          ? `Paket ${result.bestBundle.label}`
+          : isJasa
+            ? `Gabungkan layanan jadi paket`
+            : `Gabungkan produk jadi bundle`
+      };
+      return map[key] || '-';
+    };
+
+    return [
+      { key:'addon', name:'Natural Add-On', desc:'Tambah item kecil saat customer sudah mau bayar', est:'+Rp 2.000 – 5.000' },
+      { key:'threshold', name:'Threshold Bonus', desc:'Dorong belanja naik sedikit dengan bonus ambang', est:'+Rp 5.000 – 8.000' },
+      { key:'anchoring', name:'Anchoring', desc:'Tampilkan opsi mahal agar opsi tengah terlihat worth it', est:'+Rp 5.000 – 10.000' },
+      { key:'scarcity', name:'Scarcity + Value', desc:'Tambahkan urgensi + bonus terbatas', est:'+Rp 5.000 – 8.000' },
+      { key:'bundle', name:'Bundle', desc:'Gabungkan produk jadi paket', est: result?.bestBundle ? `Rp ${formatRupiah(result.bestBundle.price)}` : '-' }
+    ].map(r => ({ ...r, example: getExample(r.key) }));
+  };
     const [business, setBusiness] = useState({ name: "", type: "" });
   const [products, setProducts] = useState([{ name: "", price: "", profit: "" }]);
   const [target, setTarget] = useState("");
@@ -47,6 +89,9 @@ export default function AOVTool() {
   };
 
   const downloadPDF = () => {
+    if (!result) return;
+
+    const rows = buildRows(business, products, result);
     if (!result) return;
 
     const html = `
@@ -111,6 +156,32 @@ export default function AOVTool() {
             <ul>
               ${(result.priority||[]).map(p=>`<li>${p}</li>`).join('')}
             </ul>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="card">
+            <div class="label">TABEL STRATEGI AOV</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Teknik</th>
+                  <th>Penjelasan</th>
+                  <th>Contoh Nyata</th>
+                  <th>Estimasi</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => {
+                  const isBest = result.recommended?.type === r.key;
+                  return `<tr style="${isBest ? 'background:#ecfdf5;border:1px solid #16a34a;font-weight:bold;' : ''}">
+                    <td>${r.name} ${isBest ? '⭐' : ''}</td>
+                    <td>${r.desc}</td>
+                    <td>${r.example}</td>
+                    <td>${r.est}</td>
+                  </tr>`;
+                }).join('')}
+            </table>
           </div>
         </div>
 
@@ -454,75 +525,7 @@ Strategi kombinasi: ${combos.join(", ")}`;
               </thead>
               <tbody>
                 {(() => {
-                  const isJasa = business.type === 'jasa';
-
-                  const getExample = (key) => {
-                    const mainName = result.main?.name || (isJasa ? 'kelas / program' : 'produk utama');
-                    const addOn = products[1]?.name || (isJasa ? 'rekaman + modul + konsultasi' : 'item kecil');
-
-                    const map = {
-                      addon: isJasa
-                        ? `Saat closing ${mainName}, tawarkan upgrade bernilai seperti ${addOn}: "Kalau mau hasil lebih maksimal, biasanya ambil versi plus yang sudah termasuk ${addOn}"`
-                        : `Saat beli ${mainName}, tawarkan ${addOn}: "Sekalian tambah ini biar lebih lengkap?"`,
-
-                      threshold: isJasa
-                        ? `Naikkan ke paket lebih tinggi: "Kalau sekalian upgrade, sudah termasuk ${addOn} dan lebih hemat dibanding ambil terpisah"`
-                        : `Naikkan ke Rp ${formatRupiah(Math.round((parseNumber(products[0]?.price)||0)*1.5 || 20000))}: "Tambah sedikit dapat ${addOn}"`,
-
-                      anchoring: isJasa
-                        ? `Susun paket: Basic (live), Standard (+rekaman), Premium (+mentoring). Fokus arahkan ke Standard sebagai pilihan paling rasional`
-                        : `Buat 3 versi: kecil, sedang, besar. Dorong ke versi sedang`,
-
-                      scarcity: isJasa
-                        ? `"Batch terbatas: ${mainName} + bonus ${addOn} hanya untuk 20 peserta. Setelah itu harga normal"`
-                        : `Hari ini saja: beli ${mainName} dapat ${addOn} (20 pembeli pertama)`
-                    };
-
-                    return map[key];
-                  };
-
-                  const rows = [
-                    {
-                      name: 'Natural Add-On',
-                      key: 'addon',
-                      desc: 'Tambah item kecil saat customer sudah mau bayar',
-                      example: getExample('addon'),
-                      est: '+Rp 2.000 – 5.000'
-                    },
-                    {
-                      name: 'Threshold Bonus',
-                      key: 'threshold',
-                      desc: 'Dorong belanja naik sedikit dengan bonus ambang',
-                      example: getExample('threshold'),
-                      est: '+Rp 5.000 – 8.000'
-                    },
-                    {
-                      name: 'Anchoring',
-                      key: 'anchoring',
-                      desc: 'Tampilkan opsi mahal agar opsi tengah terlihat worth it',
-                      example: getExample('anchoring'),
-                      est: '+Rp 5.000 – 10.000'
-                    },
-                    {
-                      name: 'Scarcity + Value',
-                      key: 'scarcity',
-                      desc: 'Tambahkan urgensi + bonus terbatas',
-                      example: getExample('scarcity'),
-                      est: '+Rp 5.000 – 8.000'
-                    },
-                    {
-                      name: 'Bundle',
-                      key: 'bundle',
-                      desc: 'Gabungkan produk jadi paket lebih menarik',
-                      example: result.bestBundle
-                        ? `Paket ${result.bestBundle.label} Rp ${formatRupiah(result.bestBundle.price)}`
-                        : isJasa
-                          ? 'Gabungkan layanan jadi paket premium'
-                          : 'Gabungkan produk jadi paket hemat',
-                      est: result.bestBundle ? `Rp ${formatRupiah(result.bestBundle.price)}` : '-'
-                    }
-                  ];
-
+                  const rows = buildRows(business, products, result);
                   return rows.map((r,i)=> {
                     const isBest = result.recommended?.type === r.key;
                     return (
