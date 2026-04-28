@@ -87,6 +87,11 @@ export default function AOVTool() {
 
         <div class="section">
           <div class="card">
+            <div class="label">HASIL STRATEGI AOV</div>
+            <div class="h" style="font-size:16px; color:#111; background:#facc15; padding:6px 10px; border-radius:6px; display:inline-block; margin-bottom:8px;">
+              ${business.name || 'Bisnis'}
+            </div>
+
             <div class="label">EXECUTIVE SUMMARY</div>
             <div class="h" style="font-size:16px;">
               Fokus: ${(result.recommended?.type||'').toUpperCase()} untuk nutup gap Rp ${formatRupiah(result.gap || 0)}
@@ -436,7 +441,7 @@ Strategi kombinasi: ${combos.join(", ")}`;
 
         {result && (
           <div style={cardStyle}>
-            <h2 style={{textAlign:"center", marginBottom:"12px"}}>HASIL STRATEGI AOV</h2>
+            <h2 style={{textAlign:"center", marginBottom:"12px", color:"#facc15", background:"#111", padding:"8px", borderRadius:"8px", border:"1px solid #333"}}>HASIL STRATEGI AOV</h2>
 
             <table style={{width:"100%", borderCollapse:"collapse", fontSize:"12px"}}>
               <thead>
