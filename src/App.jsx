@@ -206,8 +206,7 @@ export default function AOVTool() {
               `).join('')}
             </div>
           </div>
-              ))}
-            </div>
+              </div>
           </div>
         </div>
 
