@@ -33,26 +33,60 @@ export default function AOVTool() {
 
       const formatPrice = (n)=> `Rp ${formatRupiah(n)}`;
 
-      // beda logic PRODUK vs JASA (lebih realistis)
+      // 🔥 PAIRING PRODUK BERDASARKAN KATEGORI (LEBIH AKURAT)
+      const getPairing = (name) => {
+        const n = (name || '').toLowerCase();
+
+        // mapping kategori implicit dari nama (fallback)
+        if (n.includes('kopi') || n.includes('coffee')) return ['pastry','croissant','snack'];
+        if (n.includes('laptop')) return ['mouse','tas laptop','keyboard'];
+        if (n.includes('hp') || n.includes('smartphone')) return ['case','tempered glass','charger'];
+        if (n.includes('hdd') || n.includes('harddisk')) return ['enclosure','kabel','adaptor'];
+        if (n.includes('kamera')) return ['memory card','tripod','baterai'];
+        if (n.includes('sepatu')) return ['kaos kaki','insole','cleaner'];
+
+        return [];
+      };
+
+      // ambil pairing paling relevan (prioritas: input user > pairing kategori)
+      // 🔥 SMART SUGGESTION (bukan cuma dari input)
+      const getRelevantAddon = () => {
+        const otherProduct = products?.find(p=>p.name && p.name !== mainName);
+        if (otherProduct) return { name: otherProduct.name, price: parseNumber(otherProduct.price||0) };
+      };
+
       const mapProduk = {
-        addon: `Saat beli ${mainName} (${formatPrice(priceMain)}), tawarkan ${addOn} ${priceAddon ? `(${formatPrice(priceAddon)})` : ''} dengan script: "Sekalian tambah ${addOn} biar lebih lengkap?"`,
-        threshold: `Set threshold sedikit di atas ${formatPrice(priceMain)}. Contoh: "Tambah sedikit lagi biar dapat ${addOn}"`,
+        addon: (()=>{
+          const addon = getRelevantAddon();
+          return `Saat beli ${mainName} (${formatPrice(priceMain)}), tawarkan ${addon.name} ${addon.price ? `(${formatPrice(addon.price)})` : ''} dengan script: "Sekalian tambah ${addon.name} biar lebih lengkap?"`;
+        })(),
+
+        threshold: (()=>{
+          const addon = getRelevantAddon();
+          return `Set threshold sedikit di atas ${formatPrice(priceMain)}. Contoh: "Tambah sedikit lagi biar dapat ${addon.name}"`;
+        })(),
+
         anchoring: `Buat 3 versi (small / medium / large). Tampilkan harga tertinggi dulu agar opsi tengah terasa paling worth it`,
-        scarcity: `Gunakan urgensi: "Hari ini saja: beli ${mainName} dapat ${addOn} gratis"`,
+
+        scarcity: (()=>{
+          const addon = getRelevantAddon();
+          return `Gunakan urgensi: "Hari ini saja: beli ${mainName} dapat ${addon.name} gratis"`;
+        })(),
+
         bundle: result?.bestBundle
           ? `Buat paket ${result.bestBundle.label} dengan harga ${formatPrice(result.bestBundle.price)} (lebih hemat dari beli satuan)`
-          : `Gabungkan beberapa produk jadi bundle hemat`
+          : `Gabungkan beberapa produk yang saling melengkapi jadi bundle hemat`
       };
 
       // 🔥 JASA dibagi: EDUKASI vs SERVICE
       const isEdukasi = (business.name || '').toLowerCase().includes('kursus') || (business.name || '').toLowerCase().includes('kelas');
 
       const mapJasaEdukasi = {
-        addon: `Saat closing ${mainName}, tawarkan tambahan seperti ${addOn} (rekaman / feedback / modul lanjutan): "Sekalian tambah ${addOn} biar hasil belajarnya lebih maksimal"`,
-        threshold: `Dorong ke paket belajar lebih lengkap: "Ambil paket ini sekalian dapat ${addOn}, progresnya lebih cepat"`,
-        anchoring: `Buat 3 paket belajar (Basic / Standard / Intensive). Desain agar Standard terlihat paling worth it`,
-        scarcity: `Gunakan batch: "Batch terbatas + bonus ${addOn} untuk X peserta pertama"`,
-        bundle: `Gabungkan: kelas + mentoring + evaluasi hasil jadi 1 paket outcome-driven`
+        addon: `Saat closing ${mainName}, jangan pernah ganti jenis layanan (misal private → kelompok). Fokus ke peningkat hasil: feedback personal, rekaman sesi, atau evaluasi progres. Contoh: "Sekalian tambah sesi evaluasi biar hasilnya lebih cepat kelihatan"`,
+        threshold: `Dorong ke paket yang meningkatkan hasil, bukan mengganti format. Contoh: "Ambil paket ini sekalian dapat sesi evaluasi tambahan, progresnya lebih terarah"`,
+        anchoring: `Buat 3 paket berbasis outcome (Basic: belajar, Standard: belajar + feedback, Intensive: belajar + feedback + evaluasi). Arahkan ke Standard`,
+        scarcity: `Gunakan kelangkaan berbasis kualitas: "Slot terbatas supaya setiap peserta dapat feedback maksimal"`,
+        bundle: `Gabungkan value outcome: kelas + feedback + evaluasi progres (bukan mencampur private dengan kelompok)`
       };
 
       const mapJasaService = {
@@ -105,136 +139,32 @@ export default function AOVTool() {
   };
 
   const downloadPDF = () => {
-    if (!result) return;
-
-    const rows = buildRows(business, products, result);
-    if (!result) return;
-
-    const html = `
-      <html>
-      <head>
-        <title>AOV Strategy Report</title>
-        <style>
-          body { font-family: Inter, Arial; padding:24px; color:#111; }
-          .header { display:flex; justify-content:space-between; align-items:flex-end; }
-          .title { font-size:24px; font-weight:800; }
-          .sub { font-size:12px; color:#666; }
-          .badge { font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #ddd; }
-          .section { margin-top:20px; }
-          .card { border:1px solid #e5e7eb; padding:14px; border-radius:10px; }
-          .label { font-size:11px; color:#888; letter-spacing:.08em; }
-          .h { font-size:14px; font-weight:700; margin-top:6px; }
-          .muted { color:#6b7280; font-size:12px; }
-          .green { color:#065f46; }
-          .divider { height:1px; background:#eee; margin:12px 0; }
-          ul { padding-left:18px; margin:0; }
-          li { margin-bottom:6px; }
-          table { width:100%; border-collapse:collapse; margin-top:8px; }
-          th, td { border:1px solid #e5e7eb; padding:8px; font-size:12px; text-align:left; }
-          th { background:#f9fafb; }
-          .best { border:1px solid #16a34a; }
-          .best th, .best td { background:#ecfdf5; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div>
-            <div class="title">AOV Strategy Report</div>
-            <div class="sub">${business.name || "Bisnis"}</div>
-            <div class="sub">${new Date().toLocaleDateString('id-ID')}</div>
-          </div>
-          <div class="badge">${(result.recommended?.type||'').toUpperCase()}</div>
-        </div>
-
-        <div class="section">
-          <div class="card">
-            <div class="label">HASIL STRATEGI AOV</div>
-            <div class="h" style="font-size:16px; color:#111; background:#facc15; padding:6px 10px; border-radius:6px; display:inline-block; margin-bottom:8px;">
-              ${business.name || 'Bisnis'}
-            </div>
-
-            <div class="label">EXECUTIVE SUMMARY</div>
-            <div class="h" style="font-size:16px;">
-              Fokus: ${(result.recommended?.type||'').toUpperCase()} untuk nutup gap Rp ${formatRupiah(result.gap || 0)}
-            </div>
-            <div class="muted">${result.recommended?.reason || ''}</div>
-            <div style="margin-top:6px;"><b>Impact:</b> +Rp ${formatRupiah(result.impact || 0)} / transaksi</div>
-            <div class="muted" style="margin-top:4px;">${result.urgency || ''}</div>
-            <div class="divider"></div>
-            
-            <div class="label">ACTION PLAN</div>
-            <ul>
-              ${(result.priority||[]).map(p=>`<li>${p}</li>`).join('')}
-            </ul>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="card">
-            <div class="label">TABEL STRATEGI AOV</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Teknik</th>
-                  <th>Penjelasan</th>
-                  <th>Contoh Nyata</th>
-                  <th>Estimasi</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows.map(r => {
-                  const isBest = result.recommended?.type === r.key;
-                  return `<tr style="${isBest ? 'background:#ecfdf5;border:1px solid #16a34a;font-weight:bold;' : ''}">
-                    <td>${r.name} ${isBest ? '⭐' : ''}</td>
-                    <td>${r.desc}</td>
-                    <td>${r.example}</td>
-                    <td>${r.est}</td>
-                  </tr>`;
-                }).join('')}
-            </table>
-
-            
-            <div class="card" style="margin-top:10px;">
-              <div class="label">TOP STRATEGI</div>
-              ${result.ranking?.map((r,i)=>`
-                <div style="padding:8px;margin-bottom:6px;border:1px solid #ddd;border-radius:6px;${i===0 ? 'background:#ecfdf5;font-weight:bold;' : ''}">
-                  <b>#${i+1} ${r.label}</b>
-                  <div style="font-size:12px;color:#666;">
-                    Potensi AOV: Rp ${formatRupiah(Math.round(r.aov || 0))}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="card">
-            <div class="label">BREAKDOWN</div>
-            <ul>
-              ${(result.breakdown||[]).map(b=>`<li>${b}</li>`).join('')}
-            </ul>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="card">
-            <div class="label">NEXT ACTION</div>
-            <ul>
-              ${(result.nextActions||[]).map(a=>`<li>✔ ${a}</li>`).join('')}
-            </ul>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    const element = document.getElementById('app-area');
+    if (!element) return;
 
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(html);
+
+    const styles = `
+      <style>
+        body { font-family: Inter, Arial; padding:20px; }
+        button { display:none !important; }
+        #app-area { max-width: 800px; margin:auto; }
+      </style>
+    `;
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>AOV Report</title>
+          ${styles}
+        </head>
+        <body>
+          ${element.innerHTML}
+        </body>
+      </html>
+    `);
+
     win.document.close();
     win.focus();
     win.print();
@@ -425,7 +355,15 @@ Strategi kombinasi: ${combos.join(", ")}`;
 
     // 🔥 RANKING TOP 3 STRATEGI
     const ranking = sims
-      .map(s => ({ ...s, score: (s.aov || 0) + (s.profit || 0) }))
+      .map(s => {
+        let labelExtra = '';
+
+        if (s.type === 'upsell') labelExtra = '⚡ Cepat dijalankan';
+        if (s.type === 'upgrade') labelExtra = '📈 Impact besar';
+        if (s.type === 'bundle') labelExtra = '💰 Profit tinggi';
+
+        return { ...s, score: (s.aov || 0) + (s.profit || 0), labelExtra };
+      })
       .sort((a,b)=>b.score-a.score)
       .slice(0,3);
 
@@ -437,8 +375,58 @@ Strategi kombinasi: ${combos.join(", ")}`;
   return (
     <>
     <style>{`@media print {
-      body { background: white; color: black; }
-      button { display: none !important; }
+      body {
+    background: white !important;
+    color: black !important;
+    font-size: 12px;
+  }
+
+  #app-area {
+    max-width: 900px;
+    margin: auto;
+  }
+
+  button {
+    display: none !important;
+  }
+
+  div[style*="background: #111"],
+  div[style*="#0f0f0f"] {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ddd !important;
+  }
+
+  h1, h2 {
+    color: black !important;
+    background: none !important;
+    border: none !important;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  th {
+    background: #f3f4f6 !important;
+    color: black !important;
+  }
+
+  td, th {
+    border: 1px solid #ddd !important;
+    padding: 6px;
+  }
+
+  tr[style*="#1f2937"] {
+    background: #e6f4ea !important;
+    border: 1px solid #16a34a !important;
+  }
+
+  p, div, span {
+    color: black !important;
+  }
     }`}</style>
     <div id="app-area" style={appStyle}>
       <div style={containerStyle}>
@@ -546,6 +534,28 @@ Strategi kombinasi: ${combos.join(", ")}`;
 
         {result && (
           <div style={cardStyle}>
+            {/* 🔥 TOP STRATEGI */}
+            <div style={{...subCard, marginBottom:"10px"}}>
+              <div style={{fontSize:"12px", color:"#888", marginBottom:"6px"}}>TOP STRATEGI</div>
+              {result.ranking?.map((r,i)=> (
+                <div key={i} style={{
+                  padding:"8px",
+                  marginBottom:"6px",
+                  border:"1px solid #333",
+                  borderRadius:"6px",
+                  background: i===0 ? "#1f2937" : "transparent"
+                }}>
+                  <b>#{i+1} {r.label}</b>
+                  <div style={{fontSize:"12px", color:"#aaa"}}>
+                    {r.labelExtra}
+                  </div>
+                  <div style={{fontSize:"12px", color:"#aaa"}}>
+                    Potensi AOV: Rp {formatRupiah(Math.round(r.aov || 0))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <h2 style={{textAlign:"center", marginBottom:"12px", color:"#facc15", background:"#111", padding:"8px", borderRadius:"8px", border:"1px solid #333"}}>HASIL STRATEGI AOV</h2>
 
             <table style={{width:"100%", borderCollapse:"collapse", fontSize:"12px"}}>
