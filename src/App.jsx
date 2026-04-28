@@ -71,7 +71,7 @@ export default function AOVTool() {
             <b>Strategi Terbaik</b><br/>
             ${result.recommended?.type?.toUpperCase()}<br/>
             <span class="small">${result.recommended?.reason}</span><br/>
-            ${result.decision}
+            ${result.insight?.replace(/\n/g,'<br/>') || ''}
           </div>
         </div>
 
