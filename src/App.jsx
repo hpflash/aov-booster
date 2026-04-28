@@ -87,6 +87,14 @@ export default function AOVTool() {
 
         <div class="section">
           <div class="card">
+            <div class="label">EXECUTIVE SUMMARY</div>
+            <div class="h" style="font-size:16px;">
+              Fokus: ${(result.recommended?.type||'').toUpperCase()} untuk nutup gap Rp ${formatRupiah(result.gap || 0)}
+            </div>
+            <div class="muted">${result.recommended?.reason || ''}</div>
+            <div style="margin-top:6px;"><b>Impact:</b> +Rp ${formatRupiah(result.impact || 0)} / transaksi</div>
+            <div class="muted" style="margin-top:4px;">${result.urgency || ''}</div>
+            <div class="divider"></div>
             <div class="label">INSIGHT</div>
             <div class="h">Strategi Utama</div>
             <div class="green">${result.recommended?.reason || ''}</div>
@@ -298,7 +306,20 @@ Strategi kombinasi: ${combos.join(", ")}`;
       priority.push("Fokus pada add-on murah & cepat diputuskan");
     }
 
-    return { main, sims, bestAOV, bestProfit, bestBundle, gap, breakdown, nextActions, recommended, insight, priority };
+    // impact & urgency
+    const impactValue = recommended?.type === 'bundle' && bestBundle
+      ? (bestBundle.price - currentAov)
+      : recommended?.type === 'upgrade'
+        ? (upgradeValue)
+        : (upsellValue);
+
+    const impact = Math.max(0, Math.round(impactValue || 0));
+
+    const urgency = gap > 0
+      ? `Bisa mulai hari ini: targetkan kenaikan ±Rp ${formatRupiah(impact)} per transaksi untuk mengejar gap Rp ${formatRupiah(gap)}.`
+      : `Target tercapai. Fokus ke scaling (traffic / repeat order).`;
+
+    return { main, sims, bestAOV, bestProfit, bestBundle, gap, breakdown, nextActions, recommended, insight, priority, impact, urgency };
   };
 
   const result = generate();
@@ -527,7 +548,14 @@ Strategi kombinasi: ${combos.join(", ")}`;
                 <div style={{fontSize:"12px", color:"#aaa", marginTop:"4px"}}>
                   {result.recommended?.reason}
                 </div>
+                <div style={{marginTop:"8px", fontSize:"13px"}}>
+                  <b>Impact:</b> +Rp {formatRupiah(result.impact || 0)} / transaksi
+                </div>
+                <div style={{marginTop:"4px", fontSize:"12px", color:"#9ca3af"}}>
+                  {result.urgency}
+                </div>
               </div>
+
               {/* Header */}
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px"}}>
                 <div style={{fontSize:"12px", color:"#888"}}>INSIGHT</div>
