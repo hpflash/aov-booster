@@ -486,12 +486,37 @@ Strategi kombinasi: ${combos.join(", ")}`;
               </tbody>
             </table>
 
-            <div style={subCard}>
-              <p><b>Strategi Terbaik:</b> {result.recommended?.type}</p>
-              <p style={{fontSize:"12px", color:"#aaa"}}>{result.recommended?.reason}</p>
-              <p style={{whiteSpace:"pre-line"}}>{result.insight}</p>
-              <ul style={{fontSize:"12px", color:"#aaa"}}>
-                {result.priority?.map((p,i)=>(<li key={i}>• {p}</li>))}
+            <div style={{...subCard, textAlign:"left"}}>
+              {/* Header */}
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px"}}>
+                <div style={{fontSize:"12px", color:"#888"}}>INSIGHT</div>
+                <div style={{fontSize:"11px", padding:"4px 8px", borderRadius:"999px", background:"#111", border:"1px solid #333"}}>
+                  {result.recommended?.type?.toUpperCase()}
+                </div>
+              </div>
+
+              {/* Main Title */}
+              <div style={{fontSize:"14px", fontWeight:"bold", marginBottom:"6px"}}>
+                Strategi Utama
+              </div>
+              <div style={{fontSize:"13px", color:"#d1fae5", marginBottom:"8px"}}>
+                {result.recommended?.reason}
+              </div>
+
+              {/* Insight Text */}
+              <div style={{fontSize:"13px", lineHeight:"1.6", marginBottom:"10px", whiteSpace:"pre-line"}}>
+                {result.insight}
+              </div>
+
+              {/* Divider */}
+              <div style={{height:"1px", background:"#222", margin:"10px 0"}} />
+
+              {/* Action Plan */}
+              <div style={{fontSize:"12px", color:"#888", marginBottom:"6px"}}>ACTION PLAN</div>
+              <ul style={{fontSize:"13px", paddingLeft:"18px", margin:0}}>
+                {result.priority?.map((p,i)=>(
+                  <li key={i} style={{marginBottom:"6px"}}> {p}</li>
+                ))}
               </ul>
             </div>
           </div>
