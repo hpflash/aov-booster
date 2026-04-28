@@ -52,40 +52,70 @@ export default function AOVTool() {
     const html = `
       <html>
       <head>
-        <title>AOV Report</title>
+        <title>AOV Strategy Report</title>
         <style>
-          body { font-family: Arial; padding:20px; }
-          h1 { margin-bottom:4px; }
-          .section { margin-top:16px; }
-          .card { border:1px solid #ddd; padding:12px; border-radius:8px; margin-top:8px; }
-          .small { font-size:12px; color:#555; }
+          body { font-family: Inter, Arial; padding:24px; color:#111; }
+          .header { display:flex; justify-content:space-between; align-items:flex-end; }
+          .title { font-size:24px; font-weight:800; }
+          .sub { font-size:12px; color:#666; }
+          .badge { font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #ddd; }
+          .section { margin-top:20px; }
+          .card { border:1px solid #e5e7eb; padding:14px; border-radius:10px; }
+          .label { font-size:11px; color:#888; letter-spacing:.08em; }
+          .h { font-size:14px; font-weight:700; margin-top:6px; }
+          .muted { color:#6b7280; font-size:12px; }
+          .green { color:#065f46; }
+          .divider { height:1px; background:#eee; margin:12px 0; }
+          ul { padding-left:18px; margin:0; }
+          li { margin-bottom:6px; }
+          table { width:100%; border-collapse:collapse; margin-top:8px; }
+          th, td { border:1px solid #e5e7eb; padding:8px; font-size:12px; text-align:left; }
+          th { background:#f9fafb; }
+          .best { border:1px solid #16a34a; }
+          .best th, .best td { background:#ecfdf5; }
         </style>
       </head>
       <body>
-        <h1>AOV Strategy Report</h1>
-        <div class="small">${business.name || "Bisnis"}</div>
-        <div class="small">${new Date().toLocaleDateString('id-ID')}</div>
+        <div class="header">
+          <div>
+            <div class="title">AOV Strategy Report</div>
+            <div class="sub">${business.name || "Bisnis"}</div>
+            <div class="sub">${new Date().toLocaleDateString('id-ID')}</div>
+          </div>
+          <div class="badge">${(result.recommended?.type||'').toUpperCase()}</div>
+        </div>
 
         <div class="section">
           <div class="card">
-            <b>Strategi Terbaik</b><br/>
-            ${result.recommended?.type?.toUpperCase()}<br/>
-            <span class="small">${result.recommended?.reason}</span><br/>
-            ${result.insight?.replace(/\n/g,'<br/>') || ''}
+            <div class="label">INSIGHT</div>
+            <div class="h">Strategi Utama</div>
+            <div class="green">${result.recommended?.reason || ''}</div>
+            <div style="margin-top:8px; line-height:1.6;">
+              ${(result.insight || '').replace(/\n/g,'<br/>')}
+            </div>
+            <div class="divider"></div>
+            <div class="label">ACTION PLAN</div>
+            <ul>
+              ${(result.priority||[]).map(p=>`<li>${p}</li>`).join('')}
+            </ul>
           </div>
         </div>
 
         <div class="section">
           <div class="card">
-            <b>Breakdown</b>
-            ${result.breakdown.map(b=>`<p>• ${b}</p>`).join("")}
+            <div class="label">BREAKDOWN</div>
+            <ul>
+              ${(result.breakdown||[]).map(b=>`<li>${b}</li>`).join('')}
+            </ul>
           </div>
         </div>
 
         <div class="section">
           <div class="card">
-            <b>Next Action</b>
-            ${result.nextActions.map(a=>`<p>✔ ${a}</p>`).join("")}
+            <div class="label">NEXT ACTION</div>
+            <ul>
+              ${(result.nextActions||[]).map(a=>`<li>✔ ${a}</li>`).join('')}
+            </ul>
           </div>
         </div>
       </body>
@@ -93,6 +123,7 @@ export default function AOVTool() {
     `;
 
     const win = window.open('', '_blank');
+    if (!win) return;
     win.document.write(html);
     win.document.close();
     win.focus();
@@ -487,6 +518,16 @@ Strategi kombinasi: ${combos.join(", ")}`;
             </table>
 
             <div style={{...subCard, textAlign:"left"}}>
+              {/* Executive Summary */}
+              <div style={{marginBottom:"10px", padding:"10px", background:"#111827", border:"1px solid #22c55e", borderRadius:"8px"}}>
+                <div style={{fontSize:"11px", color:"#888"}}>EXECUTIVE SUMMARY</div>
+                <div style={{fontSize:"14px", fontWeight:"bold", color:"#22c55e"}}>
+                  Fokus: {result.recommended?.type?.toUpperCase()} untuk nutup gap Rp {formatRupiah(result.gap || 0)}
+                </div>
+                <div style={{fontSize:"12px", color:"#aaa", marginTop:"4px"}}>
+                  {result.recommended?.reason}
+                </div>
+              </div>
               {/* Header */}
               <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px"}}>
                 <div style={{fontSize:"12px", color:"#888"}}>INSIGHT</div>
