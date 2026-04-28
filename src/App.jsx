@@ -553,7 +553,7 @@ Strategi kombinasi: ${combos.join(", ")}`;
                     Potensi AOV: Rp {formatRupiah(Math.round(r.aov || 0))}
                   </div>
                 </div>
-              ))}
+              
             </div>
 
             <h2 style={{textAlign:"center", marginBottom:"12px", color:"#facc15", background:"#111", padding:"8px", borderRadius:"8px", border:"1px solid #333"}}>HASIL STRATEGI AOV</h2>
