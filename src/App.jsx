@@ -28,29 +28,45 @@ export default function AOVTool() {
     const addOn = products?.[1]?.name || (isJasa ? 'rekaman + modul + konsultasi' : 'item kecil');
 
     const getExample = (key) => {
-      const map = {
-        addon: isJasa
-          ? `Saat closing ${mainName}, tawarkan upgrade bernilai seperti ${addOn}`
-          : `Saat beli ${mainName}, tawarkan ${addOn}`,
+      const priceMain = parseNumber(result?.main?.price || 0);
+      const priceAddon = parseNumber(products?.[1]?.price || 0);
 
-        threshold: isJasa
-          ? `Upgrade ke paket lebih tinggi yang include ${addOn}`
-          : `Tambah sedikit untuk dapat ${addOn}`,
+      const formatPrice = (n)=> `Rp ${formatRupiah(n)}`;
 
-        anchoring: isJasa
-          ? `Buat paket basic, standard, premium → arahkan ke standard`
-          : `Buat 3 versi → arahkan ke tengah`,
-
-        scarcity: isJasa
-          ? `Batch terbatas + bonus ${addOn}`
-          : `Promo terbatas: beli ${mainName} dapat ${addOn}`,
-
+      // beda logic PRODUK vs JASA (lebih realistis)
+      const mapProduk = {
+        addon: `Saat beli ${mainName} (${formatPrice(priceMain)}), tawarkan ${addOn} ${priceAddon ? `(${formatPrice(priceAddon)})` : ''} dengan script: "Sekalian tambah ${addOn} biar lebih lengkap?"`,
+        threshold: `Set threshold sedikit di atas ${formatPrice(priceMain)}. Contoh: "Tambah sedikit lagi biar dapat ${addOn}"`,
+        anchoring: `Buat 3 versi (small / medium / large). Tampilkan harga tertinggi dulu agar opsi tengah terasa paling worth it`,
+        scarcity: `Gunakan urgensi: "Hari ini saja: beli ${mainName} dapat ${addOn} gratis"`,
         bundle: result?.bestBundle
-          ? `Paket ${result.bestBundle.label}`
-          : isJasa
-            ? `Gabungkan layanan jadi paket`
-            : `Gabungkan produk jadi bundle`
+          ? `Buat paket ${result.bestBundle.label} dengan harga ${formatPrice(result.bestBundle.price)} (lebih hemat dari beli satuan)`
+          : `Gabungkan beberapa produk jadi bundle hemat`
       };
+
+      // 🔥 JASA dibagi: EDUKASI vs SERVICE
+      const isEdukasi = (business.name || '').toLowerCase().includes('kursus') || (business.name || '').toLowerCase().includes('kelas');
+
+      const mapJasaEdukasi = {
+        addon: `Saat closing ${mainName}, tawarkan tambahan seperti ${addOn} (rekaman / feedback / modul lanjutan): "Sekalian tambah ${addOn} biar hasil belajarnya lebih maksimal"`,
+        threshold: `Dorong ke paket belajar lebih lengkap: "Ambil paket ini sekalian dapat ${addOn}, progresnya lebih cepat"`,
+        anchoring: `Buat 3 paket belajar (Basic / Standard / Intensive). Desain agar Standard terlihat paling worth it`,
+        scarcity: `Gunakan batch: "Batch terbatas + bonus ${addOn} untuk X peserta pertama"`,
+        bundle: `Gabungkan: kelas + mentoring + evaluasi hasil jadi 1 paket outcome-driven`
+      };
+
+      const mapJasaService = {
+        addon: `Saat closing ${mainName}, tawarkan tambahan scope seperti ${addOn}: "Sekalian tambah ${addOn} supaya hasilnya lebih optimal"`,
+        threshold: `Naikkan ke paket scope lebih luas: "Dengan tambahan sedikit, Anda dapat ${addOn} sekalian"`,
+        anchoring: `Tampilkan 3 paket (Basic / Standard / Premium) berdasarkan scope kerja, arahkan ke Standard`,
+        scarcity: `Gunakan urgency: "Slot terbatas minggu ini + bonus ${addOn}"`,
+        bundle: `Gabungkan beberapa layanan terkait (misal: design + revisi + konsultasi) jadi satu paket`
+      };
+
+      const mapJasa = isEdukasi ? mapJasaEdukasi : mapJasaService;
+
+      const map = isJasa ? mapJasa : mapProduk;
+
       return map[key] || '-';
     };
 
